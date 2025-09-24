@@ -36,7 +36,7 @@ def download_from_azure(batch_name):
     export_dir = "/home/psa_images/temp_data/field_data/"# + str(batch_name)
     os.makedirs(export_dir, exist_ok=True)
     exe_command = f"/home/psa_images/field_tools/azcopy copy \
-        'https://weedsimagerepo.blob.core.windows.net/field-batches/{batch_name}/?sp=rl&st=2024-05-05T08:29:37Z&se=2025-05-05T16:29:37Z&spr=https&sv=2022-11-02&sr=c&sig=7QENpF2Km7R90NuK6guUSULYR9PlB6xhqylupWBZF2M%3D' \
+        'SAS_key_here' \
         {export_dir} \
         --recursive \
         --overwrite=false"
@@ -47,7 +47,7 @@ def download_from_azure(batch_name):
         #subprocess.run(['/bin/bash', '-i', '-c', exe_command])
         #process_id = subprocess.run(exe_command, shell=True, check=True)
         process_id = subprocess.run(exe_command, shell=True, check=True)
-        #subprocess.check_output(['/home/psa_images/semifield_tools/azcopy', 'copy', export_dir, 'https://weedsimagerepo.blob.core.windows.net/semifield-developed-images/?sp=racwl&st=2022-09-01T14:14:56Z&se=2024-09-02T04:14:56Z&sv=2021-06-08&sr=c&sig=KQRwEkoPFhHaq2OMpLiqxfkYLjaJso4Nje2MLHdmwJg%3D', '--recursive', '--overwrite=true'])
+        #subprocess.check_output(['/home/psa_images/semifield_tools/azcopy', 'copy', export_dir, 'SAS_key_here', '--recursive', '--overwrite=true'])
         print("")
     except Exception as e:
         raise e
