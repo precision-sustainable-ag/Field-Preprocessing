@@ -39,6 +39,14 @@
   ```bash
   ./RawTherapee_5.10.AppImage
   ```
+  Note: if you get permission denied error, then first use this command to grant execution:
+  ```bash
+  chmod u+x RawTherapee_5.10.AppImage
+  ```
+  then run RawTherapee: 
+  ```bash
+  ./RawTherapee_5.10.AppImage
+  ```
 - In the file browser, navigate to the newly downloaded batch and browse the images.
 
 ### **4. Apply Processing Profile**
