@@ -1,36 +1,17 @@
-#import cv2
-#import numpy as np
-#from PIL import Image
-#import imageio
-#import glob
-#import ntpath
-#import time
 import os
 from pathlib import Path
-import shutil
-#from scipy import ndimage
-#from skimage.measure import label   
+import shutil 
 import sys
 import subprocess
 from typing import List
 from tqdm import tqdm
-#import json
-#import pandas as pd
-#from detectclass import YoloDetectClass
-#from concurrent.futures import ThreadPoolExecutor
-#import signal
-
-#executor = ThreadPoolExecutor(max_workers=16)
-#futures = []
 
 print('Number of arguments:', len(sys.argv), 'arguments.')
 print('Argument List:', str(sys.argv))
 
-
 assert (len(sys.argv) > 1)
     
 batch_name = sys.argv[1]
-
 
 def download_from_azure(batch_name):
     export_dir = "/home/psa_images/temp_data/field_data/"# + str(batch_name)
@@ -77,7 +58,7 @@ def download_from_nfs(batch_name):
         return
     
     # Local path to copy data to
-    export_dir = Path("/home/psa_images/temp_data/field_data", batch_name)
+    export_dir = Path("temp_data/field_data", batch_name)
     export_dir.mkdir(parents=True, exist_ok=True)
 
     # Code to copy here
