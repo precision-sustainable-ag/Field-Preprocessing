@@ -31,7 +31,7 @@
     ```
 - The batch will be saved in:
   ```bash
-  /home/psa_images/temp_data/field_data/
+  temp_data/field_data/
   ```
 
 ### **3. Open RawTherapee**
