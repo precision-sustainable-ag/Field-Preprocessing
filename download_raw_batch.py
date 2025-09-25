@@ -1,9 +1,10 @@
 import os
-from pathlib import Path
-import shutil 
-import sys
+import shutil
 import subprocess
+import sys
+from pathlib import Path
 from typing import List
+
 from tqdm import tqdm
 
 print('Number of arguments:', len(sys.argv), 'arguments.')
@@ -39,7 +40,19 @@ def download_from_azure(batch_name):
 
 
 def find_unprocessed_files(batch_name: str) -> List[Path]:
-    raw_dir = Path("/mnt/research-projects/r/raatwell/longterm_images3/field-batches") / batch_name / "raws"
+    # Mount the remote directory 
+    assert len(sys.argv) > 2, "Usage: python download_raw_batch.py <batch_name> <username>"
+    username = sys.argv[2]
+    remote_path = f"{username}@sunny.ece.ncsu.edu:/mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}/raws"
+    local_mount = Path("/tmp/remote_raws_mount") / batch_name
+    local_mount.mkdir(parents=True, exist_ok=True)
+    # Check if already mounted
+    if not any(local_mount.iterdir()):
+        subprocess.run(["sshfs", remote_path, str(local_mount), "-o", "reconnect"], check=True)
+
+    #TODO: Add unmounting code after processing is done
+
+    raw_dir = local_mount
     raw_imgs = list(raw_dir.rglob("*.ARW"))
 
     batch_developed = Path("/mnt/research-projects/r/raatwell/longterm_images3/field-batches") / batch_name / "developed-images"
