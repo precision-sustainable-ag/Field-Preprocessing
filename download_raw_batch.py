@@ -1,10 +1,9 @@
 import os
-import shutil
-import subprocess
-import sys
 from pathlib import Path
+import shutil 
+import sys
+import subprocess
 from typing import List
-
 from tqdm import tqdm
 
 print('Number of arguments:', len(sys.argv), 'arguments.')
@@ -14,23 +13,33 @@ assert (len(sys.argv) > 1)
     
 batch_name = sys.argv[1]
 
+def download_from_azure(batch_name):
+    export_dir = "/home/psa_images/temp_data/field_data/"# + str(batch_name)
+    os.makedirs(export_dir, exist_ok=True)
+    exe_command = f"/home/psa_images/field_tools/azcopy copy \
+        'SAS_key_here' \
+        {export_dir} \
+        --recursive \
+        --overwrite=false"
+        
+    print(exe_command)
+    try:
+        # Run the rawtherapee command
+        #subprocess.run(['/bin/bash', '-i', '-c', exe_command])
+        #process_id = subprocess.run(exe_command, shell=True, check=True)
+        process_id = subprocess.run(exe_command, shell=True, check=True)
+        #subprocess.check_output(['/home/psa_images/semifield_tools/azcopy', 'copy', export_dir, 'SAS_key_here', '--recursive', '--overwrite=true'])
+        print("")
+    except Exception as e:
+        raise e
+    #os.killpg(os.getpgid(process_id.pid), signal.SIGKILL)
+    #process_id.wait()
+    print("Raw data has been downloaded for batch " + str(batch_name))
+    subprocess.call(['chmod', '-R', '777', export_dir + str(batch_name)])
+
+
 def find_unprocessed_files(batch_name: str) -> List[Path]:
-    # Mount the remote directory 
-    assert len(sys.argv) > 2, "Usage: python download_raw_batch.py <batch_name> <username>"
-    username = sys.argv[2]
-    remote_path = f"{username}@sunny.ece.ncsu.edu:/mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}/raws"
-    local_mount = Path("/tmp/remote_raws_mount") / batch_name
-    local_mount.mkdir(parents=True, exist_ok=True)
-
-    # Check if already mounted
-    if not any(local_mount.iterdir()):
-        subprocess.run(["sshfs", remote_path, str(local_mount), "-o", "reconnect"], check=True)
-
-
-    # TODO: figure out a way to unmount after processing
-
-
-    raw_dir = local_mount
+    raw_dir = Path("/mnt/research-projects/r/raatwell/longterm_images3/field-batches") / batch_name / "raws"
     raw_imgs = list(raw_dir.rglob("*.ARW"))
 
     batch_developed = Path("/mnt/research-projects/r/raatwell/longterm_images3/field-batches") / batch_name / "developed-images"
