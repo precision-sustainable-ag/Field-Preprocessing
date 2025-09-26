@@ -1,3 +1,4 @@
+import argparse
 import os
 import shutil
 import subprocess
@@ -10,9 +11,13 @@ from tqdm import tqdm
 print('Number of arguments:', len(sys.argv), 'arguments.')
 print('Argument List:', str(sys.argv))
 
-assert (len(sys.argv) > 1)
-    
-batch_name = sys.argv[1]
+parser = argparse.ArgumentParser(description="Process batches with RawTherapee")
+parser.add_argument("batch_name", help="Name of the batch to process")
+parser.add_argument("--username", help="Username for remote server in sunny")
+args = parser.parse_args()
+
+batch_name = args.batch_name
+username = args.username
 
 def download_from_azure(batch_name):
     export_dir = "/home/psa_images/temp_data/field_data/"# + str(batch_name)
@@ -26,45 +31,41 @@ def download_from_azure(batch_name):
     print(exe_command)
     try:
         # Run the rawtherapee command
-        #subprocess.run(['/bin/bash', '-i', '-c', exe_command])
-        #process_id = subprocess.run(exe_command, shell=True, check=True)
         process_id = subprocess.run(exe_command, shell=True, check=True)
-        #subprocess.check_output(['/home/psa_images/semifield_tools/azcopy', 'copy', export_dir, 'SAS_key_here', '--recursive', '--overwrite=true'])
-        print("")
     except Exception as e:
         raise e
-    #os.killpg(os.getpgid(process_id.pid), signal.SIGKILL)
-    #process_id.wait()
     print("Raw data has been downloaded for batch " + str(batch_name))
     subprocess.call(['chmod', '-R', '777', export_dir + str(batch_name)])
 
 
-def find_unprocessed_files(batch_name: str) -> List[Path]:
+def find_unprocessed_files(batch_name: str, username: str) -> List[Path]:
     # Mount the remote directory 
-    assert len(sys.argv) > 2, "Usage: python download_raw_batch.py <batch_name> <username>"
-    username = sys.argv[2]
-    remote_path = f"{username}@sunny.ece.ncsu.edu:/mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}/raws"
-    local_mount = Path("/tmp/remote_raws_mount") / batch_name
-    local_mount.mkdir(parents=True, exist_ok=True)
-    # Check if already mounted
-    if not any(local_mount.iterdir()):
-        subprocess.run(["sshfs", remote_path, str(local_mount), "-o", "reconnect"], check=True)
+    remote_path = f"{username}@sunny.ece.ncsu.edu:/mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}"
+    local_path = Path("/tmp") / batch_name
+    local_path.mkdir(parents=True, exist_ok=True)
 
-    #TODO: Add unmounting code after processing is done
+    print(f"syncing {remote_path} to {local_path}")
+    subprocess.call([
+        "rsync",
+        "-avz",
+        "--progress",
+        remote_path,
+        str(local_path)
+    ])
 
-    raw_dir = local_mount
+    raw_dir = local_path / "raws"
     raw_imgs = list(raw_dir.rglob("*.ARW"))
 
-    batch_developed = Path("/mnt/research-projects/r/raatwell/longterm_images3/field-batches") / batch_name / "developed-images"
+    batch_developed = local_path / "developed-images"
     developed_imgs = sorted(batch_developed.glob("*.jpg"))
     developed_img_stems = {img.stem for img in developed_imgs}
 
     unprocessed_files = [img for img in raw_imgs if img.stem not in developed_img_stems]
     return unprocessed_files
 
-def download_from_nfs(batch_name):
+def download_from_nfs(batch_name: str, username: str):
     # Path where batch is stored in the NFS-mounted directory
-    unprocessed_files = find_unprocessed_files(batch_name)
+    unprocessed_files = find_unprocessed_files(batch_name, username)
 
     if not unprocessed_files:
         print(f"No unprocessed files found for batch {batch_name}. Exiting.")
@@ -74,17 +75,18 @@ def download_from_nfs(batch_name):
     export_dir = Path("temp_data/field_data", batch_name)
     export_dir.mkdir(parents=True, exist_ok=True)
 
-    # Code to copy here
-
+    # Copy unprocessed files to local directory
     for src_file in tqdm(unprocessed_files, desc="Copying files"):
-        relative_path = src_file.relative_to(src_file.parents[2])  # preserves relative path within batch/raws/
+        relative_path = src_file.relative_to(Path("/tmp") / batch_name)  # preserves relative path within batch/raws/
         dest_file = export_dir / relative_path
         dest_file.parent.mkdir(parents=True, exist_ok=True)
+
         shutil.copy2(src_file, dest_file)
+        print(f"Copied {src_file} to {dest_file}")
     # Set permissions if needed
     subprocess.call(['chmod', '-R', '777', export_dir])
     print(f"Raw data has been downloaded for batch {batch_name}")
 
 if __name__ == "__main__":
     # download_from_azure(batch_name)
-    download_from_nfs(batch_name)
+    download_from_nfs(batch_name, username)
