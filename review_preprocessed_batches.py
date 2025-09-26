@@ -11,7 +11,6 @@ def inspect_images(root_dir, batch_name):
     image_dir = Path(root_dir, batch_name, "developed-images")     
     # Get a list of all image files in the directory
     image_files = [f for f in image_dir.glob("*.jpg")]
-    print(image_files)
     # Randomly select 10 images
     selected_images = random.sample(image_files, min(len(image_files), 10))
 
