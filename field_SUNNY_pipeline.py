@@ -111,17 +111,16 @@ def move_local_data_to_NSF(batch_name):
     subprocess.call(['rsync', '-avzh', '--progress', src, dest])
     print("changing permissions on remote server...")
 
-    #TODO: change permissions on remote server
+    # Run chmod command remotely via SSH
+    print(f"Changing permissions on remote server: {dest}")
+    chmod_command = f"ssh {username}@sunny.ece.ncsu.edu 'chmod -R 777 /mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}'"
+    subprocess.call(chmod_command, shell=True)
 
-
-    subprocess.call(['chmod', '-R', '777', dest])
-  
 def update_access_rights():
     print("Updating access rights for local data")
     src = "temp_data"
     subprocess.call(['chmod', '-R', '777', src])
     time.sleep(10)
-
 
 if(DEVELOP_IMAGES):
     if(batch_names is not None):
