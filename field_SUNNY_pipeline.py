@@ -1,69 +1,56 @@
-#import cv2
+import argparse
 import glob
-import json
-import ntpath
 import os
-import signal
 import subprocess
 import sys
 import time
-
-#from detectclass import YoloDetectClass
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-
 
 executor = ThreadPoolExecutor(max_workers=12)
 futures = []
 
 print('Number of arguments:', len(sys.argv), 'arguments.')
 print('Argument List:', str(sys.argv))
-
-batch_names = None
-if (len(sys.argv) > 1):
-    batch_names = sys.argv[1:]
     
-batch_name = sys.argv[1]
+parser = argparse.ArgumentParser(description="Process batches with RawTherapee")
+parser.add_argument("batch_names", nargs='+', help="Name(s) of the batch(es) to process")
+parser.add_argument("--username", required=True, help="Username for remote server in sunny")
+args = parser.parse_args()
+
+batch_names = args.batch_names   # This is now a list of one or more batch names
+username = args.username
 
 DEVELOP_IMAGES = True
 BACKUP_AND_DELETE_LOCAL_DATA = True
 UPLOAD_WHEN_COMPLETED = False
 FIX_ACCESS_RIGHTS = False
 
-
 nfs_path = "/mnt/research-projects/r/raatwell/longterm_images3/field-batches/"
 
-
 def processImage(imagepath,outputdir, profilepath):
-
-
+    """
+     Process a single image using RawTherapee CLI.
+    """
+    print("Processing image: %s", imagepath)
     cmd1='./squashfs-root/usr/bin/rawtherapee-cli -p "'+profilepath+'" -a -O "'+outputdir+'" -j99 -js3 -Y -c "'+ imagepath+'"' 
-    print(cmd1)
+    print("Executing command: %s", cmd1)
     os.system(cmd1)
     
-
 def develop_images(batch_name):
-    #dev_im_input_path1 = Path("/home/psa_images/temp_data/field_data/") / str(batch_name) / "raws"
-    dev_im_input_path2 = Path("/home/psa_images/temp_data/field_data/") / str(batch_name) / 'raws' / "**"
+    print("Starting image development for batch " + str(batch_name))
+    dev_im_input_path2 = Path("temp_data/field_data/") / str(batch_name) / 'raws' / "**"
     dev_im_input_paths = [dev_im_input_path2]
     for dev_im_input_path in dev_im_input_paths:
-        #print("1")
         # remove jpg images from the raw folder
         for zippath in glob.iglob(str(dev_im_input_path / Path("*.JPG"))):
             os.remove(zippath)
-        #print(str(dev_im_input_path / Path("*.pp3")))
-        #print(glob.glob(str(dev_im_input_path / Path("*.pp3"))))
         list_of_pp3_files = glob.glob(str(dev_im_input_path / Path("*.pp3")))
-        #print(len(list_of_pp3_files))
+
         if(len(list_of_pp3_files)>0):
-            #dev_im_output_path = Path("/mnt/research-projects/r/raatwell/longterm_images3/field-batches/") / str(batch_name) / "developed-images/"
-            dev_im_output_path = Path("/home/psa_images/temp_data/field_data/") / str(batch_name) / "developed-images/"
-            #dev_im_development_profile_path = Path("/home/psa_images/persistent_data/semifield-utils/image_development/dev_profiles/") / (str(batch_name)+".pp3")
-            #print("2")
-            #assert (os.path.exists(dev_im_development_profile_path))
+            dev_im_output_path = Path("temp_data/field_data/") / str(batch_name) / "developed-images/"
             
             os.makedirs(dev_im_output_path, exist_ok = True)
-            
             for pp3_file in list_of_pp3_files:
                 #print("3")
                 image_path = pp3_file[:-4]
@@ -71,55 +58,18 @@ def develop_images(batch_name):
                 print(image_path)
                 
                 a = executor.submit(processImage, str(image_path),str(dev_im_output_path), str(pp3_file))
-                #processImage(str(image_path),str(dev_im_output_path), str(pp3_file))
-            
-            #exe_command = f"./RawTherapee_5.10.AppImage --cli \
-            #    -O {dev_im_output_path} \
-            #    -p {dev_im_development_profile_path} \
-            #    -j99 \
-            #    -c {dev_im_input_path}"
-            #exe_command2 = 'bash -c "OMP_NUM_THREADS=90; ' + exe_command + '"'
-            
-            #print(exe_command2)
-            #try:
-            #    # Run the rawtherapee command
-            #    #subprocess.run(exe_command, shell=True, check=True)
-            #    subprocess.run(exe_command2, shell=True, check=True)
-            #    print("")
-            #except Exception as e:
-            #    raise e
-                
-    while executor._work_queue.qsize():
-        print('Queue size: '+str(executor._work_queue.qsize()))
-        time.sleep(2)
-    time.sleep(5)
-    src = str(Path("/home/psa_images/temp_data/field_data/") / str(batch_name))
-    subprocess.call(['chmod', '-R', '777', src])
-    
+
     executor.shutdown(wait=True)              
+    time.sleep(5)
+    src = str(Path("temp_data/field_data/") / str(batch_name))
+    subprocess.call(['chmod', '-R', '777', src])
             
     print("Image development has finished for batch " + str(batch_name))
     
-    #print("Uploading rawtherapee development profiles to azure..")
-    #dev_im_development_profile_path = Path("/home/psa_images/persistent_data/semifield-utils/image_development/dev_profiles/") / (str(batch_name)+".pp3")
-    #exe_command = f"/home/psa_images/semifield_tools/azcopy copy \
-    #    {dev_im_development_profile_path} \
-    #    'SAS_key_here' \
-    #    --recursive \
-    #    --overwrite=true"
-        
-    #print(exe_command)
-    #try:
-    #    process_id = subprocess.run(exe_command, shell=True, check=True)
-    #except Exception as e:
-    #    raise e
-    #os.killpg(os.getpgid(process_id.pid), signal.SIGKILL)
-    #process_id.wait()
-    #print("Profile has been uploaded for batch " + str(batch_name))
-
 def upload_to_azure(batch_name):
+    print("Uploading data to Azure for batch " + str(batch_name))
     time.sleep(30)
-    export_dir = "/home/psa_images/temp_data/semifield-outputs/" + str(batch_name)
+    export_dir = "temp_data/field-outputs/" + str(batch_name)
     exe_command = f"/home/psa_images/semifield_tools/azcopy copy \
         {export_dir} \
         'SAS_key_here' \
@@ -129,10 +79,7 @@ def upload_to_azure(batch_name):
     print(exe_command)
     try:
         # Run the rawtherapee command
-        #subprocess.run(['/bin/bash', '-i', '-c', exe_command])
-        #process_id = subprocess.run(exe_command, shell=True, check=True)
         process_id = subprocess.run(exe_command, shell=True, check=True)
-        #subprocess.check_output(['/home/psa_images/semifield_tools/azcopy', 'copy', export_dir, 'SAS_key_here', '--recursive', '--overwrite=true'])
         print("")
     except Exception as e:
         #raise e
@@ -148,35 +95,31 @@ def upload_to_azure(batch_name):
     print(exe_command)
     try:
         # Run the rawtherapee command
-        #subprocess.run(['/bin/bash', '-i', '-c', exe_command])
-        #process_id = subprocess.run(exe_command, shell=True, check=True)
         process_id = subprocess.run(exe_command, shell=True, check=True)
-        #subprocess.check_output(['/home/psa_images/semifield_tools/azcopy', 'copy', export_dir, 'SAS_key_here', '--recursive', '--overwrite=true'])
         print("")
     except Exception as e:
         print("")
     
-    #os.killpg(os.getpgid(process_id.pid), signal.SIGKILL)
-    #process_id.wait()
     print("Weed detection has finished for batch " + str(batch_name))
 
 def move_local_data_to_NSF(batch_name):
-    dev_im_input_path1 = str(Path("/home/psa_images/temp_data/field_data/") / str(batch_name))
-    src = dev_im_input_path1
-    dest = nfs_path
-    #subprocess.call('rsync --remove-source-files -h ' + src + ' ' + dest)
-    #subprocess.Popen(['rsync', '-avzh', '--remove-source-files', '--progress', src, dest])
-    subprocess.call(['rsync', '-avzh', '--remove-source-files', '--progress', src, dest])
-    
+    print("Backing up and deleting local data for batch " + str(batch_name))
+    src = Path("temp_data/field_data/") / str(batch_name) / "developed-images"
+    dest = f"{username}@sunny.ece.ncsu.edu:/mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}/"
+
+    print("Transferring data from %s to %s...", src, dest)
+    subprocess.call(['rsync', '-avzh', '--progress', src, dest])
+    print("changing permissions on remote server...")
+
+    #TODO: change permissions on remote server
+
+
     subprocess.call(['chmod', '-R', '777', dest])
   
-    
 def update_access_rights():
-
-    src = "/home/psa_images/temp_data"
-    #subprocess.Popen(['chmod', '-R', '777', src])
+    print("Updating access rights for local data")
+    src = "temp_data"
     subprocess.call(['chmod', '-R', '777', src])
-    
     time.sleep(10)
 
 
