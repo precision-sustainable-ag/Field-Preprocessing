@@ -39,7 +39,7 @@ def processImage(imagepath,outputdir, profilepath):
     
 def develop_images(batch_name):
     print("Starting image development for batch " + str(batch_name))
-    dev_im_input_path2 = Path("temp_data/field_data/") / str(batch_name) / 'raws' / "**"
+    dev_im_input_path2 = Path("temp_data/") / str(batch_name) / 'raws' / "**"
     dev_im_input_paths = [dev_im_input_path2]
     for dev_im_input_path in dev_im_input_paths:
         # remove jpg images from the raw folder
@@ -48,9 +48,9 @@ def develop_images(batch_name):
         list_of_pp3_files = glob.glob(str(dev_im_input_path / Path("*.pp3")))
 
         if(len(list_of_pp3_files)>0):
-            dev_im_output_path = Path("temp_data/field_data/") / str(batch_name) / "developed-images/"
-            
+            dev_im_output_path = Path("temp_data/") / str(batch_name) / "developed-images/"
             os.makedirs(dev_im_output_path, exist_ok = True)
+
             for pp3_file in list_of_pp3_files:
                 #print("3")
                 image_path = pp3_file[:-4]
@@ -61,7 +61,7 @@ def develop_images(batch_name):
 
     executor.shutdown(wait=True)              
     time.sleep(5)
-    src = str(Path("temp_data/field_data/") / str(batch_name))
+    src = str(Path("temp_data/") / str(batch_name))
     subprocess.call(['chmod', '-R', '777', src])
             
     print("Image development has finished for batch " + str(batch_name))
@@ -102,12 +102,13 @@ def upload_to_azure(batch_name):
     
     print("Weed detection has finished for batch " + str(batch_name))
 
-def move_local_data_to_NSF(batch_name):
-    print("Backing up and deleting local data for batch " + str(batch_name))
-    src = Path("temp_data/field_data/") / str(batch_name) / "developed-images"
-    dest = f"{username}@sunny.ece.ncsu.edu:/mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}/"
+def move_local_data_to_NSF(batch_names, username=username):
+    for batch_name in batch_names:
+        print("Copying local data to lts for batch " + str(batch_name))
+        src = Path("temp_data/") / str(batch_name) / "developed-images"
+        dest = f"{username}@sunny.ece.ncsu.edu:/mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}/"
 
-    print("Transferring data from %s to %s...", src, dest)
+    print("Copying data from %s to %s...", src, dest)
     subprocess.call(['rsync', '-avzh', '--progress', src, dest])
     print("changing permissions on remote server...")
 
@@ -133,5 +134,5 @@ if(UPLOAD_WHEN_COMPLETED):
 if(FIX_ACCESS_RIGHTS):
     update_access_rights()
 if(BACKUP_AND_DELETE_LOCAL_DATA):
-    move_local_data_to_NSF(batch_name)
+    move_local_data_to_NSF(batch_names, username)
     
