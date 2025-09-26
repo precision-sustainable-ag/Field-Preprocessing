@@ -79,11 +79,11 @@ def download_from_nfs(batch_name: str, username: str):
         relative_path = src_file.relative_to(Path("/tmp") / batch_name)  
         dest_file = export_dir / relative_path
         dest_file.parent.mkdir(parents=True, exist_ok=True)
-
-        shutil.copy2(src_file, dest_file)
+        shutil.copy2(src_file, dest_file) # Copy the file
         print(f"Copied {src_file} to {dest_file}")
-    # Set permissions if needed
-    subprocess.call(['chmod', '-R', '777', export_dir])
+    
+    shutil.rmtree(Path("/tmp") / batch_name, ignore_errors=True) # Remove the temporary directory
+    subprocess.call(['chmod', '-R', '777', export_dir]) # Change permissions
     print(f"Raw data has been downloaded for batch {batch_name}")
 
 if __name__ == "__main__":
