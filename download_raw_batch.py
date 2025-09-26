@@ -41,7 +41,7 @@ def download_from_azure(batch_name):
 def find_unprocessed_files(batch_name: str, username: str) -> List[Path]:
     # Mount the remote directory 
     remote_path = f"{username}@sunny.ece.ncsu.edu:/mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}"
-    local_path = Path("/tmp") / batch_name
+    local_path = Path("/tmp")
     local_path.mkdir(parents=True, exist_ok=True)
 
     print(f"syncing {remote_path} to {local_path}")
@@ -53,7 +53,7 @@ def find_unprocessed_files(batch_name: str, username: str) -> List[Path]:
         str(local_path)
     ])
 
-    raw_dir = local_path / "raws"
+    raw_dir = local_path / batch_name / "raws"
     raw_imgs = list(raw_dir.rglob("*.ARW"))
 
     batch_developed = local_path / "developed-images"
@@ -66,18 +66,17 @@ def find_unprocessed_files(batch_name: str, username: str) -> List[Path]:
 def download_from_nfs(batch_name: str, username: str):
     # Path where batch is stored in the NFS-mounted directory
     unprocessed_files = find_unprocessed_files(batch_name, username)
-
     if not unprocessed_files:
         print(f"No unprocessed files found for batch {batch_name}. Exiting.")
         return
     
     # Local path to copy data to
-    export_dir = Path("temp_data/field_data", batch_name)
+    export_dir = Path(f"temp_data/{batch_name}")
     export_dir.mkdir(parents=True, exist_ok=True)
 
     # Copy unprocessed files to local directory
     for src_file in tqdm(unprocessed_files, desc="Copying files"):
-        relative_path = src_file.relative_to(Path("/tmp") / batch_name)  # preserves relative path within batch/raws/
+        relative_path = src_file.relative_to(Path("/tmp") / batch_name)  
         dest_file = export_dir / relative_path
         dest_file.parent.mkdir(parents=True, exist_ok=True)
 
