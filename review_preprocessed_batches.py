@@ -1,18 +1,19 @@
-from pathlib import Path
-import random
-import cv2
 import argparse
+import random
+import subprocess
+from pathlib import Path
 
+import cv2
 import matplotlib.pyplot as plt
 
+
 def inspect_images(root_dir, batch_name):
-    image_dir = Path(root_dir, batch_name, "developed-images") 
-    
+    image_dir = Path(root_dir, batch_name, "developed-images")     
     # Get a list of all image files in the directory
     image_files = [f for f in image_dir.glob("*.jpg")]
-
+    print(image_files)
     # Randomly select 10 images
-    selected_images = random.sample(image_files, 10)
+    selected_images = random.sample(image_files, min(len(image_files), 10))
 
     # Create a figure to display the images
     fig, axes = plt.subplots(2, 5, figsize=(12, 6))
@@ -21,8 +22,7 @@ def inspect_images(root_dir, batch_name):
     for i, image_file in enumerate(selected_images):
         print(f"Parsing image {i + 1} of {len(selected_images)}")
         # Read the image
-        image_path = image_dir / image_file
-        image = cv2.imread(str(image_path))
+        image = cv2.imread(str(image_file))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Display the image
@@ -45,7 +45,7 @@ def inspect_images(root_dir, batch_name):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Image inspection script')
-    parser.add_argument('--root_dir', default="/mnt/research-projects/r/raatwell/longterm_images3/field-batches/", help='Batch to inspect')
+    parser.add_argument('--root_dir', default="temp_data", help='Batch to inspect')
     parser.add_argument('batch_name', help='Batch to inspect')
     args = parser.parse_args()
     inspect_images(args.root_dir, args.batch_name)
