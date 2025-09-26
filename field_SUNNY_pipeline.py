@@ -128,7 +128,7 @@ if(DEVELOP_IMAGES):
         for batch_name in batch_names:
             develop_images(batch_name)
     else:
-        develop_images(batch_name)
+        develop_images(batch_names)
 if(UPLOAD_WHEN_COMPLETED):
     upload_to_azure(batch_name)
 if(FIX_ACCESS_RIGHTS):
