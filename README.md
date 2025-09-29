@@ -10,6 +10,7 @@
   - Images are transferred to long-term storage at:
     ```bash
     /mnt/research-projects/r/raatwell/longterm_images3/field-batches
+    
     ```
 
 ---
