@@ -1,14 +1,13 @@
-import argparse
 import random
-import subprocess
 from pathlib import Path
 
 import cv2
 import matplotlib.pyplot as plt
 
+ROOT_DIR = "temp_data"
 
-def inspect_images(root_dir, batch_name):
-    image_dir = Path(root_dir, batch_name, "developed-images")     
+def inspect_images(batch_name):
+    image_dir = Path(ROOT_DIR, batch_name, "developed-images")     
     # Get a list of all image files in the directory
     image_files = [f for f in image_dir.glob("*.jpg")]
     # Randomly select 10 images
@@ -43,8 +42,4 @@ def inspect_images(root_dir, batch_name):
     print("Done saving figure.")
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Image inspection script')
-    parser.add_argument('--root_dir', default="temp_data", help='Batch to inspect')
-    parser.add_argument('batch_name', help='Batch to inspect')
-    args = parser.parse_args()
-    inspect_images(args.root_dir, args.batch_name)
+    inspect_images("batch_name")
