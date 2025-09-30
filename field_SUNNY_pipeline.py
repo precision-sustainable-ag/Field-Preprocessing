@@ -7,6 +7,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from utils import review_preprocessed_batches
+
 executor = ThreadPoolExecutor(max_workers=12)
 futures = []
 
@@ -21,8 +23,9 @@ args = parser.parse_args()
 batch_names = args.batch_names   # This is now a list of one or more batch names
 username = args.username
 
-DEVELOP_IMAGES = True
-BACKUP_AND_DELETE_LOCAL_DATA = True
+DEVELOP_IMAGES = False
+REVIEW_PREPROCESSED_BATCHES = True
+BACKUP_AND_DELETE_LOCAL_DATA = False
 UPLOAD_WHEN_COMPLETED = False
 FIX_ACCESS_RIGHTS = False
 
@@ -33,7 +36,7 @@ def processImage(imagepath,outputdir, profilepath):
      Process a single image using RawTherapee CLI.
     """
     print("Processing image: %s", imagepath)
-    cmd1='./squashfs-root/usr/bin/rawtherapee-cli -p "'+profilepath+'" -a -O "'+outputdir+'" -j99 -js3 -Y -c "'+ imagepath+'"' 
+    cmd1='LD_LIBRARY_PATH=/lib/x86_64-linux-gnu ./squashfs-root/usr/bin/rawtherapee-cli -p "'+profilepath+'" -a -O "'+outputdir+'" -j99 -js3 -Y -c "'+ imagepath+'"' 
     print("Executing command: %s", cmd1)
     os.system(cmd1)
     
@@ -129,10 +132,12 @@ if(DEVELOP_IMAGES):
             develop_images(batch_name)
     else:
         develop_images(batch_names)
+if(REVIEW_PREPROCESSED_BATCHES):
+    for batch_name in batch_names:
+        review_preprocessed_batches.inspect_images(str(batch_name))
 if(UPLOAD_WHEN_COMPLETED):
     upload_to_azure(batch_name)
 if(FIX_ACCESS_RIGHTS):
     update_access_rights()
 if(BACKUP_AND_DELETE_LOCAL_DATA):
     move_local_data_to_NSF(batch_names, username)
-    
