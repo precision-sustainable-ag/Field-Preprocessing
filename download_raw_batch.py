@@ -74,7 +74,7 @@ def download_from_nfs(batch_name: str, username: str):
         return
     
     # Local path to copy data to
-    export_dir = Path(f"temp_data/{batch_name}")
+    export_dir = Path(f"temp_data/{batch_name}/raws")
     export_dir.mkdir(parents=True, exist_ok=True)
 
     for src_file in tqdm(unprocessed_files, desc="Copying files"):

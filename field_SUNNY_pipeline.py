@@ -42,7 +42,7 @@ def processImage(imagepath,outputdir, profilepath):
     
 def develop_images(batch_name):
     print("Starting image development for batch " + str(batch_name))
-    dev_im_input_path2 = Path("temp_data/") / str(batch_name) / 'raws' / "**"
+    dev_im_input_path2 = Path("temp_data/") / str(batch_name) / 'raws'
     dev_im_input_paths = [dev_im_input_path2]
     for dev_im_input_path in dev_im_input_paths:
         # remove jpg images from the raw folder
