@@ -39,28 +39,31 @@ def download_from_azure(batch_name):
 
 
 def find_unprocessed_files(batch_name: str, username: str) -> List[Path]:
-    # Mount the remote directory 
-    remote_path = f"{username}@sunny.ece.ncsu.edu:/mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}"
-    local_path = Path("/tmp")
-    local_path.mkdir(parents=True, exist_ok=True)
+    """Find RAW files in the remote batch directory that do not have corresponding developed JPGs."""
+    print(f"Finding unprocessed files for batch {batch_name} on remote server...")
+    # Define remote directories
+    raw_dir = f"/mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}/raws"
+    dev_dir = f"/mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}/developed-images"
 
-    print(f"syncing {remote_path} to {local_path}")
-    subprocess.call([
-        "rsync",
-        "-avz",
-        "--progress",
-        remote_path,
-        str(local_path)
-    ])
+    # List RAW files remotely
+    raw_cmd = [
+        "ssh", f"{username}@sunny.ece.ncsu.edu",
+        f"find {raw_dir} -type f -name '*.ARW'"
+    ]
+    raw_files = subprocess.check_output(raw_cmd).decode().splitlines()
 
-    raw_dir = local_path / batch_name / "raws"
-    raw_imgs = list(raw_dir.rglob("*.ARW"))
+    # List developed JPGs remotely
+    dev_cmd = [
+        "ssh", f"{username}@sunny.ece.ncsu.edu",
+        f"find {dev_dir} -type f -name '*.jpg'"
+    ]
+    dev_files = subprocess.check_output(dev_cmd).decode().splitlines()
 
-    batch_developed = local_path / "developed-images"
-    developed_imgs = sorted(batch_developed.glob("*.jpg"))
-    developed_img_stems = {img.stem for img in developed_imgs}
+    # Compare stems
+    dev_stems = {Path(f).stem for f in dev_files}
+    unprocessed_files = [f for f in raw_files if Path(f).stem not in dev_stems]
 
-    unprocessed_files = [img for img in raw_imgs if img.stem not in developed_img_stems]
+    print(f"Found {len(unprocessed_files)} unprocessed files out of {len(raw_files)} total raws.")
     return unprocessed_files
 
 def download_from_nfs(batch_name: str, username: str):
@@ -74,16 +77,18 @@ def download_from_nfs(batch_name: str, username: str):
     export_dir = Path(f"temp_data/{batch_name}")
     export_dir.mkdir(parents=True, exist_ok=True)
 
-    # Copy unprocessed files to local directory
     for src_file in tqdm(unprocessed_files, desc="Copying files"):
-        relative_path = src_file.relative_to(Path("/tmp") / batch_name)  
-        dest_file = export_dir / relative_path
+        dest_file = export_dir / Path(src_file).name
         dest_file.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src_file, dest_file) # Copy the file
-        print(f"Copied {src_file} to {dest_file}")
-    
-    shutil.rmtree(Path("/tmp") / batch_name, ignore_errors=True) # Remove the temporary directory
-    subprocess.call(['chmod', '-R', '777', export_dir]) # Change permissions
+
+        subprocess.call([
+            "rsync", "-avz",
+            f"{username}@sunny.ece.ncsu.edu:{src_file}",
+            str(dest_file)
+        ])
+        print(f"Copied {src_file} -> {dest_file}")
+
+    subprocess.call(['chmod', '-R', '777', str(export_dir)])
     print(f"Raw data has been downloaded for batch {batch_name}")
 
 if __name__ == "__main__":
