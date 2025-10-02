@@ -25,7 +25,7 @@ username = args.username
 
 DEVELOP_IMAGES = False
 REVIEW_PREPROCESSED_BATCHES = True
-BACKUP_AND_DELETE_LOCAL_DATA = False
+BACKUP_LOCAL_DATA = False
 UPLOAD_WHEN_COMPLETED = False
 FIX_ACCESS_RIGHTS = False
 
@@ -111,7 +111,7 @@ def move_local_data_to_NSF(batch_names, username=username):
         src = Path("temp_data/") / str(batch_name) / "developed-images"
         dest = f"{username}@sunny.ece.ncsu.edu:/mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}/"
 
-    print("Copying data from %s to %s...", src, dest)
+    print(f"Copying data from {src} to {dest}...")
     subprocess.call(['rsync', '-avzh', '--progress', src, dest])
     print("changing permissions on remote server...")
 
@@ -139,5 +139,5 @@ if(UPLOAD_WHEN_COMPLETED):
     upload_to_azure(batch_name)
 if(FIX_ACCESS_RIGHTS):
     update_access_rights()
-if(BACKUP_AND_DELETE_LOCAL_DATA):
+if(BACKUP_LOCAL_DATA):
     move_local_data_to_NSF(batch_names, username)
