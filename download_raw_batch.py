@@ -12,11 +12,11 @@ print('Number of arguments:', len(sys.argv), 'arguments.')
 print('Argument List:', str(sys.argv))
 
 parser = argparse.ArgumentParser(description="Process batches with RawTherapee")
-parser.add_argument("batch_name", help="Name of the batch to process")
-parser.add_argument("--username", help="Username for remote server in sunny")
+parser.add_argument("batch_names", nargs='+', help="One or more batch names to process")
+parser.add_argument("--username", required=True, help="Username for remote server in sunny")
 args = parser.parse_args()
 
-batch_name = args.batch_name
+batch_names = args.batch_names   # This is now a list of one or more batch names
 username = args.username
 
 def download_from_azure(batch_name):
@@ -78,7 +78,7 @@ def download_from_nfs(batch_name: str, username: str):
     export_dir.mkdir(parents=True, exist_ok=True)
 
     for src_file in tqdm(unprocessed_files, desc="Copying files"):
-        dest_file = export_dir / Path(src_file).name
+        dest_file = export_dir / Path(src_file).parent.name / Path(src_file).name
         dest_file.parent.mkdir(parents=True, exist_ok=True)
 
         subprocess.call([
@@ -92,5 +92,5 @@ def download_from_nfs(batch_name: str, username: str):
     print(f"Raw data has been downloaded for batch {batch_name}")
 
 if __name__ == "__main__":
-    # download_from_azure(batch_name)
-    download_from_nfs(batch_name, username)
+    for batch_name in tqdm(batch_names, desc="Processing batches"):
+        download_from_nfs(batch_name, username)
