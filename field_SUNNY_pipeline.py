@@ -62,7 +62,6 @@ def develop_images(batch_name):
                 
                 a = executor.submit(processImage, str(image_path),str(dev_im_output_path), str(pp3_file))
 
-    executor.shutdown(wait=True)              
     time.sleep(5)
     src = str(Path("temp_data/") / str(batch_name))
     subprocess.call(['chmod', '-R', '777', src])
@@ -132,6 +131,8 @@ if(DEVELOP_IMAGES):
             develop_images(batch_name)
     else:
         develop_images(batch_names)
+executor.shutdown(wait=True) # Shutting down the executor to free up resources
+
 if(REVIEW_PREPROCESSED_BATCHES):
     for batch_name in batch_names:
         review_preprocessed_batches.inspect_images(str(batch_name))
