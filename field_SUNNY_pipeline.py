@@ -24,10 +24,8 @@ batch_names = args.batch_names   # This is now a list of one or more batch names
 username = args.username
 
 DEVELOP_IMAGES = False
-REVIEW_PREPROCESSED_BATCHES = True
-BACKUP_LOCAL_DATA = False
-UPLOAD_WHEN_COMPLETED = False
-FIX_ACCESS_RIGHTS = False
+REVIEW_PREPROCESSED_BATCHES = False
+BACKUP_LOCAL_DATA = True
 
 nfs_path = "/mnt/research-projects/r/raatwell/longterm_images3/field-batches/"
 
@@ -42,7 +40,7 @@ def processImage(imagepath,outputdir, profilepath):
     
 def develop_images(batch_name):
     print("Starting image development for batch " + str(batch_name))
-    dev_im_input_path2 = Path("temp_data/") / str(batch_name) / 'raws'
+    dev_im_input_path2 = Path("temp_data/") / str(batch_name) / 'raws' / "**"
     dev_im_input_paths = [dev_im_input_path2]
     for dev_im_input_path in dev_im_input_paths:
         # remove jpg images from the raw folder
@@ -110,20 +108,20 @@ def move_local_data_to_NSF(batch_names, username=username):
         src = Path("temp_data/") / str(batch_name) / "developed-images"
         dest = f"{username}@sunny.ece.ncsu.edu:/mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}/"
 
-    print(f"Copying data from {src} to {dest}...")
-    subprocess.call(['rsync', '-avzh', '--progress', src, dest])
-    print("changing permissions on remote server...")
+        print(f"Copying data from {src} to {dest}...")
+        subprocess.call(['rsync', '-avzh', '--progress', src, dest])
+        print("changing permissions on remote server...")
 
-    # Run chmod command remotely via SSH
-    print(f"Changing permissions on remote server: {dest}")
-    chmod_command = f"ssh {username}@sunny.ece.ncsu.edu 'chmod -R 777 /mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}'"
-    subprocess.call(chmod_command, shell=True)
+        # Run chmod command remotely via SSH
+        print(f"Changing permissions on remote server: {dest}")
+        chmod_command = f"ssh {username}@sunny.ece.ncsu.edu 'chmod -R 777 /mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}'"
+        subprocess.call(chmod_command, shell=True)
 
-def update_access_rights():
-    print("Updating access rights for local data")
-    src = "temp_data"
-    subprocess.call(['chmod', '-R', '777', src])
-    time.sleep(10)
+# def update_access_rights():
+#     print("Updating access rights for local data")
+#     src = "temp_data"
+#     subprocess.call(['chmod', '-R', '777', src])
+#     time.sleep(10)
 
 if(DEVELOP_IMAGES):
     if(batch_names is not None):
@@ -136,9 +134,5 @@ executor.shutdown(wait=True) # Shutting down the executor to free up resources
 if(REVIEW_PREPROCESSED_BATCHES):
     for batch_name in batch_names:
         review_preprocessed_batches.inspect_images(str(batch_name))
-if(UPLOAD_WHEN_COMPLETED):
-    upload_to_azure(batch_name)
-if(FIX_ACCESS_RIGHTS):
-    update_access_rights()
 if(BACKUP_LOCAL_DATA):
     move_local_data_to_NSF(batch_names, username)
