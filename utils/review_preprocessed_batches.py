@@ -4,10 +4,8 @@ from pathlib import Path
 import cv2
 import matplotlib.pyplot as plt
 
-ROOT_DIR = "temp_data"
-
-def inspect_images(batch_name):
-    image_dir = Path(ROOT_DIR, batch_name, "developed-images")     
+def inspect_images(temp_dir, batch_name):
+    image_dir = Path(temp_dir, batch_name, "developed-images")     
     # Get a list of all image files in the directory
     image_files = [f for f in image_dir.glob("*.jpg")]
     # Randomly select 10 images
@@ -38,8 +36,8 @@ def inspect_images(batch_name):
     reviewed_batches.mkdir(exist_ok=True)
     output_file = Path(reviewed_batches, f'{batch_name}.png')
     print("Saving figure to ", output_file)
-    plt.savefig(output_file, bbox_inches='tight', dpi=200)
+    plt.savefig(output_file, bbox_inches='tight', dpi=300)
     print("Done saving figure.")
 
 if __name__ == '__main__':
-    inspect_images("batch_name")
+    inspect_images("temp_dir", "batch_name")
