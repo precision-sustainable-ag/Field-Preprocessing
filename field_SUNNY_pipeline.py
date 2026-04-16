@@ -18,14 +18,21 @@ print('Argument List:', str(sys.argv))
 parser = argparse.ArgumentParser(description="Process batches with RawTherapee")
 parser.add_argument("batch_names", nargs='+', help="Name(s) of the batch(es) to process")
 parser.add_argument("--username", required=True, help="Username for remote server in sunny")
+parser.add_argument("--location", required=True, help="Location: documents or hdd1")
 args = parser.parse_args()
 
 batch_names = args.batch_names   # This is now a list of one or more batch names
 username = args.username
+location = args.location
 
 DEVELOP_IMAGES = False
 REVIEW_PREPROCESSED_BATCHES = False
 BACKUP_LOCAL_DATA = True
+
+if location == "documents":
+    temp_dir = "/home/weedsci/Documents/Field-Preprocessing/temp_data/"
+elif location == "hdd1":
+    temp_dir = "/media/hdd1/Nav/Field-Preprocessing/temp_data/"
 
 nfs_path = "/mnt/research-projects/r/raatwell/longterm_images3/field-batches/"
 
@@ -40,7 +47,7 @@ def processImage(imagepath,outputdir, profilepath):
     
 def develop_images(batch_name):
     print("Starting image development for batch " + str(batch_name))
-    dev_im_input_path2 = Path("temp_data/") / str(batch_name) / 'raws' / "**"
+    dev_im_input_path2 = Path(temp_dir) / str(batch_name) / 'raws' / "**"
     dev_im_input_paths = [dev_im_input_path2]
     for dev_im_input_path in dev_im_input_paths:
         # remove jpg images from the raw folder
@@ -49,7 +56,7 @@ def develop_images(batch_name):
         list_of_pp3_files = glob.glob(str(dev_im_input_path / Path("*.pp3")))
 
         if(len(list_of_pp3_files)>0):
-            dev_im_output_path = Path("temp_data/") / str(batch_name) / "developed-images/"
+            dev_im_output_path = Path(temp_dir) / str(batch_name) / "developed-images/"
             os.makedirs(dev_im_output_path, exist_ok = True)
 
             for pp3_file in list_of_pp3_files:
@@ -61,7 +68,7 @@ def develop_images(batch_name):
                 a = executor.submit(processImage, str(image_path),str(dev_im_output_path), str(pp3_file))
 
     time.sleep(5)
-    src = str(Path("temp_data/") / str(batch_name))
+    src = str(Path(temp_dir) / str(batch_name))
     subprocess.call(['chmod', '-R', '777', src])
             
     print("Image development has finished for batch " + str(batch_name))
@@ -69,7 +76,7 @@ def develop_images(batch_name):
 def upload_to_azure(batch_name):
     print("Uploading data to Azure for batch " + str(batch_name))
     time.sleep(30)
-    export_dir = "temp_data/field-outputs/" + str(batch_name)
+    export_dir = Path(temp_dir) / "field-outputs" / str(batch_name)
     exe_command = f"/home/psa_images/semifield_tools/azcopy copy \
         {export_dir} \
         'SAS_key_here' \
@@ -105,25 +112,20 @@ def upload_to_azure(batch_name):
 def move_local_data_to_NSF(batch_names, username=username):
     for batch_name in batch_names:
         print("Copying local data to lts for batch " + str(batch_name))
-        src = Path("temp_data/") / str(batch_name) / "developed-images"
+        src = Path(temp_dir) / str(batch_name) / "developed-images"
         dest = f"{username}@sunny.ece.ncsu.edu:/mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}/"
 
         print(f"Copying data from {src} to {dest}...")
-        subprocess.call(['rsync', '-avzh', '--progress', src, dest])
+        subprocess.run(['rsync', '-avzh', '--progress', src, dest], check=True)
         print("changing permissions on remote server...")
 
         # Run chmod command remotely via SSH
         print(f"Changing permissions on remote server: {dest}")
         chmod_command = f"ssh {username}@sunny.ece.ncsu.edu 'chmod -R 777 /mnt/research-projects/r/raatwell/longterm_images3/field-batches/{batch_name}'"
-        subprocess.call(chmod_command, shell=True)
-
-# def update_access_rights():
-#     print("Updating access rights for local data")
-#     src = "temp_data"
-#     subprocess.call(['chmod', '-R', '777', src])
-#     time.sleep(10)
+        subprocess.run(chmod_command, shell=True, check=True)
 
 if(DEVELOP_IMAGES):
+    print("Developing images for batches: ", batch_names)
     if(batch_names is not None):
         for batch_name in batch_names:
             develop_images(batch_name)
@@ -132,7 +134,9 @@ if(DEVELOP_IMAGES):
 executor.shutdown(wait=True) # Shutting down the executor to free up resources
 
 if(REVIEW_PREPROCESSED_BATCHES):
+    print("Reviewing preprocessed batches")
     for batch_name in batch_names:
-        review_preprocessed_batches.inspect_images(str(batch_name))
+        review_preprocessed_batches.inspect_images(temp_dir, str(batch_name))
 if(BACKUP_LOCAL_DATA):
+    print("Backing up local data to NSF")
     move_local_data_to_NSF(batch_names, username)
